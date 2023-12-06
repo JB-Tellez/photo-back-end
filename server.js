@@ -1,39 +1,40 @@
-'use strict';
-
 require('dotenv').config();
-const express = require('express');
 const cors = require('cors');
+const express = require('express');
 const axios = require('axios');
-const PORT = process.env.PORT;
 
+const PORT = process.env.PORT || 3005;
 const app = express();
 
 // middleware
 app.use(cors());
 
+
 // routes
-app.get('/photos', getPhotos);
+app.get('/photos', fetchPhotos);
 app.get('*', notFound);
-app.use('*', errorHandler);
 
 // helper functions
-async function getPhotos(request, response) {
+async function fetchPhotos(request, response, next) {
+
   const searchQuery = request.query.searchQuery;
 
-  const url = `https://api.unsplash.com/search/photos/?client_id=${process.env.UNSPLASH_ACCESS_KEY}&query=${searchQuery}`;
-
   try {
+    const url = `https://api.unsplash.com/search/photos/?client_id=${process.env.UNSPLASH_ACCESS_KEY}&query=${searchQuery}`;
+
     const photosResponse = await axios.get(url);
-    const photoArray = photosResponse.data.results.map(photo => new Photo(photo));
-    response.status(200).send(photoArray);
+
+    const photos = photosResponse.data.results.map(item => new Photo(item));
+
+    response.json(photos);
+
   } catch (error) {
-    console.error('error fetching photos', error);
     next(error);
-  }
+  } 
 }
 
 function notFound(request, response) {
-  response.status(404).send('the page you are looking for is not there');
+  response.status(404).send('the page you are looking for is not there.')
 }
 
 function errorHandler(error, request, response, next) {
@@ -49,5 +50,5 @@ class Photo {
   }
 }
 
-// start server
-app.listen(PORT, () => console.log(`listening on ${PORT}`));
+// start the server
+app.listen(PORT, () => console.log('Server listening on PORT', PORT));
